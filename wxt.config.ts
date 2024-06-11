@@ -8,6 +8,6 @@ export default defineConfig({
   }),
   srcDir: 'src',
   manifest: {
-    permissions: ['clipboardWrite', 'notifications', 'storage'],
+    permissions: ['clipboardWrite', 'notifications', 'storage', 'fileSystemProvider']
   }
 });

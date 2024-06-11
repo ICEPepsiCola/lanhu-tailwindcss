@@ -1,4 +1,4 @@
-import { getCSSPropertys } from "@/lib/dom";
+import { getImagePropertys, getHTMLPropertys, saveImage } from "@/lib/dom";
 import ReactDOM from 'react-dom/client';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -25,7 +25,24 @@ export default defineContentScript({
   },
 });
 
-
+async function generateTailwindCode(isToast: boolean = true) {
+  const copyCode = document.getElementById('copy_code');
+  const sliceImgBox = document.querySelectorAll('.annotation_container.lanhu_scrollbar.flag-pl .annotation_item');
+  if (copyCode) {
+    const tailwindCode = await getHTMLPropertys();
+    navigator.clipboard.writeText(tailwindCode);
+    isToast && toast("复制成功", { autoClose: 100 });
+    return { element: 'div', className: tailwindCode };
+  }
+  if (sliceImgBox && sliceImgBox.length) {
+    const tailwindCode = await getImagePropertys();
+    navigator.clipboard.writeText(tailwindCode);
+    isToast && toast("复制成功", { autoClose: 100 });
+    const fileName = await saveImage();
+    return { element: 'img', className: tailwindCode, fileName };
+  }
+  toast("请先选中设计稿", { autoClose: 100 });
+}
 
 // 循环检测是否绑定点击事件
 function checkBindLayerInteractive() {
@@ -48,15 +65,27 @@ function checkBindLayerInteractive() {
   copyTailwindCode.style.setProperty('color', '#2878ff');
   copyTailwindCode.style.setProperty('margin', '0 8px');
   copyTailwindCode.addEventListener('click', async () => {
-    const copyCode = document.getElementById('copy_code');
-    if (!copyCode) {
-      toast("请先选中设计稿", { autoClose: 100 });
-      return;
+    generateTailwindCode();
+  });
+  // 生成并且复制HTML代码
+  const copyHTMLCode = document.createElement('span');
+  copyHTMLCode.id = 'copy_html_code';
+  copyHTMLCode.textContent = 'TailwindHTML';
+  copyHTMLCode.style.cssText = copyTailwindCode.style.cssText;
+  copyHTMLCode.addEventListener('click', async () => {
+    const result = await generateTailwindCode(false);
+    if (!result) return;
+    const { element, className, fileName } = result;
+    let html = '';
+    if (element === 'div') {
+      html = `<div className='${className}'></div>`;
+    } else if (element === 'img') {
+      html = `<COSImg src='${fileName}' className='${className}' />`;
     }
-    const tailwindCode = await getCSSPropertys();
-    navigator.clipboard.writeText(tailwindCode);
+    navigator.clipboard.writeText(html);
     toast("复制成功", { autoClose: 100 });
   });
+  div.appendChild(copyHTMLCode);
   div.appendChild(copyTailwindCode);
   operation.appendChild(div);
 }
